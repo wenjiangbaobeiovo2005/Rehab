@@ -13,31 +13,29 @@ package.domain = org.rehabgpt
 source.dir = .
 
 # (list) Source files to include (let empty to include all the files)
-source.include_exts = py,png,jpg,kv,atlas
-
-# (list) List of inclusions using pattern matching
-#source.include_patterns = assets/*,images/*.png
+source.include_exts = py,png,jpg,kv,atlas,db,sqlite3
 
 # (list) Source files to exclude (let empty to not exclude anything)
 source.exclude_exts = spec,zip,bat,md
 
 # (list) List of directory to exclude (let empty to not exclude anything)
-source.exclude_dirs = tests, bin, venv, build, dist, .git, .github, __pycache__, .buildozer, squat-evaluation-system
+source.exclude_dirs = tests, bin, venv, build, dist, .git, .github, __pycache__, .buildozer, squat-evaluation-system, documentation
 
 # (list) List of exclusions using pattern matching
 # Do not prefix with './'
-source.exclude_patterns = test_*, *_test.py, README.md, *.zip, *.bat, *.spec, .env, *.md
+source.exclude_patterns = test_*, *_test.py, README.md, *.zip, *.bat, *.spec, .env, *.md, *.log
 
-# (str) Application versioning (method 1)
-version = 1.0
+# (str) Application versioning 
+# 方法1: 固定版本号
+version = 1.0.0
 
-# (str) Application versioning (method 2)
+# 方法2: 从main.py中读取版本号
 # version.regex = __version__ = ['"](.*)['"]
 # version.filename = %(source.dir)s/main.py
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3,kivy==2.0.0,opencv-python,mediapipe==0.8.9.1,numpy==1.21.2,requests==2.27.1
+requirements = python3,kivy==2.0.0,opencv-python,mediapipe==0.8.9.1,numpy==1.21.2,requests==2.27.1,sqlite3
 
 # (list) Garden requirements
 #garden_requirements =
