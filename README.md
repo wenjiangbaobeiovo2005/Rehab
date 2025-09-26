@@ -87,6 +87,22 @@ buildozer android debug
 ├── main_pyqt.py                # 原始PyQt5版本的主程序
 ├── main_kivy.py                # Kivy版本的主程序（用于Android）
 ├── pose_estimator.py           # 核心姿态估计算法模块
+├── fms_assessors/              # FMS动作评估器模块
+│   ├── __init__.py             # 模块初始化文件
+│   ├── base_assessor.py        # 评估器基类
+│   ├── squat.py                # 深蹲评估器
+│   ├── hurdle_step.py          # 跨栏步评估器
+│   ├── inline_lunge.py         # 直线弓步蹲评估器
+│   ├── shoulder_mobility.py    # 肩部灵活性评估器
+│   ├── active_leg_raise.py     # 主动直腿上抬评估器
+│   ├── trunk_pushup.py         # 躯干稳定俯卧撑评估器
+│   └── rotary_stability.py     # 旋转稳定性评估器
+├── utils/                      # 工具函数模块
+│   ├── __init__.py             # 模块初始化文件
+│   ├── angle_calculations.py   # 角度计算工具
+│   ├── landmark_filter.py      # 关键点滤波工具
+│   ├── movement_analysis.py    # 动作分析工具
+│   └── symmetry_analysis.py    # 对称性分析工具
 ├── squat-evaluation-system/    # 主程序目录（原始结构）
 │   ├── fms_assessors/          # FMS动作评估器
 │   ├── utils/                  # 工具函数
