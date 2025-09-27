@@ -5,7 +5,7 @@ FMS评估器基类模块
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, List
 
 
 class BaseAssessor(ABC):
@@ -63,10 +63,10 @@ class BaseAssessor(ABC):
         获取平均评分
         
         Returns:
-            平均评分
+            历史评估的平均评分
         """
         if not self.assessment_history:
             return 0.0
             
-        total_score = sum([record['score'] for record in self.assessment_history])
+        total_score = sum(record['score'] for record in self.assessment_history)
         return total_score / len(self.assessment_history)

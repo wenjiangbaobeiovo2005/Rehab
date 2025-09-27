@@ -1,7 +1,5 @@
 kivy==2.0.0
 opencv-python
-kivy==2.0.0
-opencv-python
 mediapipe==0.8.9.1
 numpy==1.21.2
 requests==2.27.1

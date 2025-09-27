@@ -1,23 +1,26 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+from kivy.app import App
+from kivy.uix.screenmanager import ScreenManager
 
-"""
-RehabGPT移动端主入口文件
-为Android平台优化的版本
-"""
+from main_kivy import MainScreen
+from user_profile_screen import UserProfileScreen
+from training_plan_screen import TrainingPlanScreen
 
-# 为Android平台设置Kivy的环境变量
-import os
-os.environ['KIVY_METRICS_DENSITY'] = '2'
-os.environ['KIVY_METRICS_FONTSCALE'] = '1.0'
 
-from kivy.config import Config
-# 设置适合手机屏幕的窗口大小
-Config.set('graphics', 'width', '480')
-Config.set('graphics', 'height', '800')
-Config.write()
+class RehabGPTApp(App):
+    """主应用程序类"""
+    
+    def build(self):
+        # 设置应用的标题
+        self.title = "RehabGPT智能康复训练评估系统"
+        
+        # 创建屏幕管理器
+        sm = ScreenManager()
+        sm.add_widget(MainScreen(name='main'))
+        sm.add_widget(UserProfileScreen(name='user_profile'))
+        sm.add_widget(TrainingPlanScreen(name='training_plan'))
+        
+        return sm
 
-from main_kivy import RehabGPTApp
 
 if __name__ == '__main__':
     RehabGPTApp().run()

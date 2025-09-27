@@ -25,6 +25,10 @@ import datetime
 import os
 from pose_estimator import PoseEstimator
 
+# 添加AI相关导入
+from ai_assistant import AIFitnessAssistant
+from user_profile import UserProfile
+
 class StyledButton(Button):
     """自定义样式按钮"""
     def __init__(self, **kwargs):
@@ -258,6 +262,16 @@ class MainScreen(Screen):
         middle_layout.add_widget(guidance_layout)
         
         main_layout.add_widget(middle_layout)
+        
+        # 视频容器和状态指示器
+        video_container = FloatLayout()
+        self.video_display = Image()
+        self.status_indicator = Label(
+            text='准备就绪',
+            size_hint=(1, 0.1),
+            pos_hint={'top': 1},
+            color=(0.2, 0.7, 0.3, 1)
+        )
         
         video_container.add_widget(self.video_display)
         video_container.add_widget(self.status_indicator)
@@ -516,14 +530,52 @@ class MainScreen(Screen):
         # 这里应该实现数据收集逻辑
         
     def api_integration(self, instance):
-        """处理API接入"""
-        Logger.info("接入API功能")
-        # 这里应该实现API接入逻辑
-        
+        """接入API功能"""
+        # 这里可以添加API连接测试或其他API相关功能
+        # 目前主要是跳转到用户信息输入界面
+        self.manager.current = 'user_profile'
+    
     def generate_plan(self, instance):
-        """处理训练方案生成"""
-        Logger.info("生成训练方案")
-        # 这里应该实现训练方案生成逻辑
+        """生成训练方案 - 从数据库获取最近的评估结果并跳转到用户信息界面"""
+        try:
+            # 获取最近的评估结果
+            assessment_results = []
+            if hasattr(self.pose_estimator, 'db_manager') and self.pose_estimator.db_manager:
+                # 获取所有动作的评估结果
+                from db_manager import DatabaseManager
+                db = DatabaseManager()
+                
+                # 获取会话历史
+                session_history = db.get_session_history()
+                if session_history:
+                    # 获取最近的会话数据
+                    for session in session_history[:5]:  # 获取最近5个会话
+                        session_id, action_name, score, timestamp = session
+                        # 获取详细数据
+                        session_data = db.get_session_data(session_id)
+                        if session_data:
+                            result = {
+                                "movement_name": action_name,
+                                "score": score,
+                                "feedback": session_data.get("feedback", []),
+                                "angles": session_data.get("angles", {})
+                            }
+                            assessment_results.append(result)
+            
+            # 传递评估结果到用户信息界面
+            user_profile_screen = self.manager.get_screen('user_profile')
+            user_profile_screen.set_assessment_results(assessment_results)
+            
+            # 跳转到用户信息界面
+            self.manager.current = 'user_profile'
+            
+        except Exception as e:
+            popup = Popup(
+                title='错误',
+                content=Label(text=f'获取评估数据时出错: {str(e)}'),
+                size_hint=(0.6, 0.3)
+            )
+            popup.open()
     
     def show_api_data_options(self):
         """显示API数据发送选项"""
