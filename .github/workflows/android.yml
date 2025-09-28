@@ -31,6 +31,13 @@ jobs:
         sudo apt install -y build-essential libffi-dev libssl-dev python3-dev python3-pip
         sudo apt install -y git zip unzip openjdk-11-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev
         
+    - name: Accept Android SDK licenses
+      run: |
+        mkdir -p $HOME/.android
+        echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > $HOME/.android/repositories.cfg
+        echo "84831b9409646a918e30573bab4c9c91346d8abd" >> $HOME/.android/repositories.cfg
+        yes | sdkmanager --sdk_root=${ANDROID_HOME} --licenses
+        
     - name: Initialize buildozer
       run: |
         buildozer init
