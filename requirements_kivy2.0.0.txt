@@ -1,0 +1,9 @@
+# Note: Kivy 2.0.0 has metadata issues that are incompatible with pip >= 24.1
+# To install this version, use pip < 24.1:
+# pip install "pip<24.1"
+# pip install -r requirements_kivy2.0.0.txt
+kivy==2.0.0
+opencv-python
+mediapipe==0.8.9.1
+numpy==1.21.2
+requests==2.27.1

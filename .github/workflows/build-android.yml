@@ -21,7 +21,8 @@ jobs:
     
     - name: Install dependencies
       run: |
-        pip install --upgrade pip
+        # Use pip version < 24.1 for compatibility with older Kivy versions
+        pip install "pip<24.1"
         pip install Cython==0.29.33
         pip install -r requirements.txt
         pip install buildozer
