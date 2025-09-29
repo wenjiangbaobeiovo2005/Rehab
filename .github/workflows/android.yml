@@ -70,6 +70,19 @@ jobs:
         else
           echo "sdkmanager not found, skipping license acceptance"
         fi
+
+    - name: Install required Android SDK packages
+      run: |
+        cd $HOME/android-sdk
+        
+        # Install platform-tools and build-tools
+        cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/android-sdk "platform-tools" "build-tools;30.0.3" "platforms;android-30" || true
+        
+        # Verify installation
+        ls -la $HOME/android-sdk/
+        if [ -d "build-tools" ]; then
+          ls -la $HOME/android-sdk/build-tools/
+        fi
         
     - name: Initialize buildozer
       run: |
