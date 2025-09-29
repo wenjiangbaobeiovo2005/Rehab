@@ -23,7 +23,7 @@ jobs:
       run: |
         sudo apt update
         sudo apt install -y build-essential libffi-dev libssl-dev python3-dev python3-pip
-        sudo apt install -y git zip unzip openjdk-11-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses-dev cmake libffi-dev libssl-dev
+        sudo apt install -y git zip unzip openjdk-11-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev
         
     - name: Install buildozer and dependencies
       run: |
@@ -51,35 +51,55 @@ jobs:
         echo "Directory structure after unzip:"
         ls -la
         
-        # Organize directory structure properly
+        # Ensure cmdline-tools/latest directory exists
         mkdir -p cmdline-tools/latest
         
-        # Handle different possible extraction results
-        if [ -d "cmdline-tools" ] && [ -d "cmdline-tools/cmdline-tools" ]; then
-          # Double nested case
-          echo "Found double nested cmdline-tools directory"
-          mv cmdline-tools/cmdline-tools/* cmdline-tools/latest/
-          rm -rf cmdline-tools/cmdline-tools
-        elif [ -d "cmdline-tools" ] && [ "$(ls -A cmdline-tools)" ] && [ ! -d "cmdline-tools/latest" ]; then
-          # Single nested case - contains items but no 'latest' directory
-          echo "Found single nested cmdline-tools directory"
-          mv cmdline-tools/* cmdline-tools/latest/
-        elif [ -d "tools" ]; then
-          # If tools directory exists (as seen in the error), move it to the correct location
+        # Handle different possible extraction results with more robust logic
+        if [ -d "tools" ]; then
+          # If tools directory exists, move it to the correct location
           echo "Found tools directory, moving to cmdline-tools/latest"
-          mv tools cmdline-tools/latest/
-        else
-          # If extracted directly, move all files to cmdline-tools/latest
-          echo "Moving all files to cmdline-tools/latest"
-          mv * cmdline-tools/latest/ 2>/dev/null || true
+          mv tools/* cmdline-tools/latest/ 2>/dev/null || echo "Nothing to move from tools"
+          rmdir tools 2>/dev/null || true
+        elif [ -d "cmdline-tools" ]; then
+          # Handle cmdline-tools directory structure
+          if [ -d "cmdline-tools/cmdline-tools" ]; then
+            # Double nested case
+            echo "Found double nested cmdline-tools directory"
+            mv cmdline-tools/cmdline-tools/* cmdline-tools/latest/
+            rm -rf cmdline-tools/cmdline-tools
+          elif [ "$(ls -A cmdline-tools)" ]; then
+            # Single nested case with content
+            echo "Found cmdline-tools with content, moving to latest"
+            # Move all content from cmdline-tools to cmdline-tools/latest
+            # But first check if there's a 'latest' directory inside cmdline-tools
+            if [ -d "cmdline-tools/latest" ]; then
+              echo "latest directory already exists inside cmdline-tools"
+            else
+              # Move everything to latest
+              for item in cmdline-tools/*; do
+                if [ -e "$item" ]; then
+                  echo "Moving $item to cmdline-tools/latest/"
+                  mv "$item" cmdline-tools/latest/
+                fi
+              done
+            fi
+          fi
         fi
         
-        # Clean up any remaining conflicting directories
-        rm -rf cmd*/ 2>/dev/null || true
+        # Final check and cleanup
+        if [ ! -d "cmdline-tools/latest" ]; then
+          echo "cmdline-tools/latest directory does not exist, creating it"
+          mkdir -p cmdline-tools/latest
+        fi
+        
+        # Ensure the latest directory has the needed structure
+        mkdir -p cmdline-tools/latest/bin
         
         # Verify structure
         echo "Final directory structure:"
-        ls -la cmdline-tools/latest/
+        ls -la cmdline-tools/ 2>/dev/null || echo "cmdline-tools directory not found"
+        ls -la cmdline-tools/latest/ 2>/dev/null || echo "cmdline-tools/latest directory not found"
+        ls -la cmdline-tools/latest/bin/ 2>/dev/null || echo "cmdline-tools/latest/bin directory not found"
     
     - name: Accept Android SDK licenses
       run: |
@@ -87,22 +107,40 @@ jobs:
         export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
         # Ensure sdkmanager exists
         echo "Checking sdkmanager location:"
-        ls -la $ANDROID_HOME/cmdline-tools/latest/bin/ || echo "sdkmanager directory not found"
+        find $ANDROID_HOME -name "sdkmanager" 2>/dev/null || echo "sdkmanager not found anywhere in ANDROID_HOME"
+        ls -la $ANDROID_HOME/cmdline-tools/latest/bin/ 2>/dev/null || echo "bin directory not found"
         # Accept licenses using full path to sdkmanager
         mkdir -p $HOME/.android
         echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > $HOME/.android/repositories.cfg
         if [ -f "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=${ANDROID_HOME} --licenses || true
         else
-          echo "sdkmanager not found, skipping license acceptance"
+          # Try to find sdkmanager in other locations
+          SDKMANAGER_PATH=$(find $ANDROID_HOME -name "sdkmanager" 2>/dev/null | head -n 1)
+          if [ -n "$SDKMANAGER_PATH" ]; then
+            echo "Found sdkmanager at: $SDKMANAGER_PATH"
+            yes | $SDKMANAGER_PATH --sdk_root=${ANDROID_HOME} --licenses || true
+          else
+            echo "sdkmanager not found, skipping license acceptance"
+          fi
         fi
 
     - name: Install required Android SDK packages
       run: |
         cd $HOME/android-sdk
         
-        # Install platform-tools and build-tools
-        cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/android-sdk "platform-tools" "build-tools;30.0.3" "platforms;android-30" || true
+        # Try to install platform-tools and build-tools
+        if [ -f "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
+          cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/android-sdk "platform-tools" "build-tools;30.0.3" "platforms;android-30" || true
+        else
+          # Try alternative sdkmanager location
+          SDKMANAGER_PATH=$(find $ANDROID_HOME -name "sdkmanager" 2>/dev/null | head -n 1)
+          if [ -n "$SDKMANAGER_PATH" ]; then
+            $SDKMANAGER_PATH --sdk_root=$HOME/android-sdk "platform-tools" "build-tools;30.0.3" "platforms;android-30" || true
+          else
+            echo "Could not find sdkmanager to install packages"
+          fi
+        fi
         
         # Verify installation
         ls -la $HOME/android-sdk/
