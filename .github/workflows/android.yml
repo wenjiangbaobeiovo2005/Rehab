@@ -48,18 +48,26 @@ jobs:
         unzip commandlinetools-linux-6514223_latest.zip
         
         # Check the extracted directory structure
+        echo "Directory structure after unzip:"
         ls -la
         
         # Organize directory structure properly
         mkdir -p cmdline-tools/latest
-        # Move all contents to the proper location
+        
+        # Handle different possible extraction results
         if [ -d "cmdline-tools" ]; then
           # If cmdline-tools already exists, move its contents
+          echo "Found cmdline-tools directory, moving its contents"
           mv cmdline-tools/* cmdline-tools/latest/ 2>/dev/null || true
           # Remove empty cmdline-tools directory if it exists
           rmdir cmdline-tools 2>/dev/null || true
+        elif [ -d "tools" ]; then
+          # If tools directory exists (as seen in the error), move it to the correct location
+          echo "Found tools directory, moving to cmdline-tools/latest"
+          mv tools cmdline-tools/latest/ 2>/dev/null || true
         else
           # If extracted directly, move all files to cmdline-tools/latest
+          echo "Moving all files to cmdline-tools/latest"
           mv * cmdline-tools/latest/ 2>/dev/null || true
         fi
         
@@ -67,6 +75,7 @@ jobs:
         rm -rf cmd*/ 2>/dev/null || true
         
         # Verify structure
+        echo "Final directory structure:"
         ls -la cmdline-tools/latest/
     
     - name: Accept Android SDK licenses
