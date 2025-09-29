@@ -12,10 +12,10 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v4.1.7
     
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v5.2.0
       with:
         python-version: '3.9'
         
@@ -55,23 +55,26 @@ jobs:
         mkdir -p cmdline-tools/latest
         
         # Handle different possible extraction results
-        if [ -d "cmdline-tools" ]; then
-          # If cmdline-tools already exists, move its contents
-          echo "Found cmdline-tools directory, moving its contents"
-          mv cmdline-tools/* cmdline-tools/latest/ 2>/dev/null || true
-          # Remove empty cmdline-tools directory if it exists
-          rmdir cmdline-tools 2>/dev/null || true
+        if [ -d "cmdline-tools" ] && [ -d "cmdline-tools/cmdline-tools" ]; then
+          # Double nested case
+          echo "Found double nested cmdline-tools directory"
+          mv cmdline-tools/cmdline-tools/* cmdline-tools/latest/
+          rm -rf cmdline-tools/cmdline-tools
+        elif [ -d "cmdline-tools" ] && [ "$(ls -A cmdline-tools)" ] && [ ! -d "cmdline-tools/latest" ]; then
+          # Single nested case - contains items but no 'latest' directory
+          echo "Found single nested cmdline-tools directory"
+          mv cmdline-tools/* cmdline-tools/latest/
         elif [ -d "tools" ]; then
           # If tools directory exists (as seen in the error), move it to the correct location
           echo "Found tools directory, moving to cmdline-tools/latest"
-          mv tools cmdline-tools/latest/ 2>/dev/null || true
+          mv tools cmdline-tools/latest/
         else
           # If extracted directly, move all files to cmdline-tools/latest
           echo "Moving all files to cmdline-tools/latest"
           mv * cmdline-tools/latest/ 2>/dev/null || true
         fi
         
-        # Clean up any remaining cmd* directories
+        # Clean up any remaining conflicting directories
         rm -rf cmd*/ 2>/dev/null || true
         
         # Verify structure
@@ -124,14 +127,14 @@ jobs:
       timeout-minutes: 45
         
     - name: Upload APK
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v4.3.6
       with:
         name: RehabGPT-APK
         path: bin/*.apk
         if-no-files-found: warn
         
     - name: Upload build logs
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v4.3.6
       with:
         name: build-logs
         path: |
