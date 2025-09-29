@@ -47,10 +47,24 @@ jobs:
         wget https://dl.google.com/android/repository/commandlinetools-linux-6514223_latest.zip
         unzip commandlinetools-linux-6514223_latest.zip
         
-        # Organize directory structure
+        # Check the extracted directory structure
+        ls -la
+        
+        # Organize directory structure properly
         mkdir -p cmdline-tools/latest
-        mv cmd*/* cmdline-tools/latest/ 2>/dev/null || true
-        rm -rf cmd*
+        # Move all contents to the proper location
+        if [ -d "cmdline-tools" ]; then
+          # If cmdline-tools already exists, move its contents
+          mv cmdline-tools/* cmdline-tools/latest/ 2>/dev/null || true
+          # Remove empty cmdline-tools directory if it exists
+          rmdir cmdline-tools 2>/dev/null || true
+        else
+          # If extracted directly, move all files to cmdline-tools/latest
+          mv * cmdline-tools/latest/ 2>/dev/null || true
+        fi
+        
+        # Clean up any remaining cmd* directories
+        rm -rf cmd*/ 2>/dev/null || true
         
         # Verify structure
         ls -la cmdline-tools/latest/
