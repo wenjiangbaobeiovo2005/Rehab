@@ -19,45 +19,40 @@ jobs:
       with:
         python-version: '3.8'
         
-    - name: Install dependencies
-      run: |
-        # Use pip version < 24.1 for compatibility with older Kivy versions
-        pip install "pip<24.1"
-        pip install buildozer cython==0.29.33
-        
-    - name: Install build dependencies
+    - name: Install system dependencies
       run: |
         sudo apt update
         sudo apt install -y build-essential libffi-dev libssl-dev python3-dev python3-pip
         sudo apt install -y git zip unzip openjdk-11-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev
         
-    - name: Install Android SDK
+    - name: Install buildozer and dependencies
       run: |
-        export ANDROID_HOME=$HOME/android-sdk
-        mkdir -p $ANDROID_HOME
-        cd $ANDROID_HOME
+        pip install "pip<24.1"
+        pip install buildozer cython==0.29.33
+        
+    - name: Set up Android environment
+      run: |
+        # Set environment variables
+        echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
+        echo "PATH=$PATH:$HOME/android-sdk/cmdline-tools/latest/bin:$HOME/android-sdk/build-tools/latest" >> $GITHUB_ENV
+        echo "JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64" >> $GITHUB_ENV
+        
+    - name: Install and configure Android SDK
+      run: |
+        # Create Android SDK directory
+        mkdir -p $HOME/android-sdk
+        cd $HOME/android-sdk
+        
+        # Download and extract command line tools
         wget https://dl.google.com/android/repository/commandlinetools-linux-6514223_latest.zip
         unzip commandlinetools-linux-6514223_latest.zip
-        # Check the actual directory structure after extraction
-        echo "Directory structure after unzip:"
-        ls -la
-        # Create cmdline-tools/latest directory structure
+        
+        # Organize directory structure
         mkdir -p cmdline-tools/latest
-        # Handle different possible directory structures
-        if [ -d "cmdline-tools" ] && [ -d "cmdline-tools/bin" ]; then
-          # Standard structure with bin directory inside cmdline-tools
-          mv cmdline-tools/* cmdline-tools/latest/
-        elif [ -d "tools" ] && [ -d "tools/bin" ]; then
-          # Direct tools directory
-          mv tools cmdline-tools/latest/
-        else
-          # Other structure - move everything to latest
-          mv * cmdline-tools/latest/ 2>/dev/null || true
-        fi
-        # Ensure we have the right structure
-        echo "cmdline-tools directory structure:"
-        ls -la cmdline-tools/
-        echo "cmdline-tools/latest directory structure:"
+        mv cmd*/* cmdline-tools/latest/ 2>/dev/null || true
+        rm -rf cmd*
+        
+        # Verify structure
         ls -la cmdline-tools/latest/
     
     - name: Accept Android SDK licenses
@@ -80,6 +75,12 @@ jobs:
       run: |
         buildozer init
       continue-on-error: true
+      
+    - name: Update buildozer.spec
+      run: |
+        # Update buildozer.spec to use our Android SDK
+        echo "android.accept_sdk_license = True" >> buildozer.spec
+        echo "android.sdk_path = $HOME/android-sdk" >> buildozer.spec
       
     - name: Build APK
       run: |

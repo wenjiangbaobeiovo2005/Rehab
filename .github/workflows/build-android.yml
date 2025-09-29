@@ -19,72 +19,79 @@ jobs:
       with:
         python-version: '3.9'
     
-    - name: Install dependencies
-      run: |
-        # Use pip version < 24.1 for compatibility with older Kivy versions
-        pip install "pip<24.1"
-        pip install Cython==0.29.33
-        pip install -r requirements.txt
-        pip install buildozer
-    
     - name: Install system dependencies
       run: |
         sudo apt update
         sudo apt install -y build-essential libffi-dev libssl-dev python3-dev python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev
-        sudo apt install -y git zip unzip openjdk-11-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev
-    
-    - name: Install Android SDK
+        sudo apt install -y git zip unzip openjdk-11-jdk
+        
+    - name: Install buildozer and dependencies
       run: |
-        export ANDROID_HOME=$HOME/android-sdk
-        mkdir -p $ANDROID_HOME
-        cd $ANDROID_HOME
+        pip install "pip<24.1"
+        pip install Cython==0.29.33
+        pip install -r requirements.txt
+        pip install buildozer
+        
+    - name: Set up Android environment
+      run: |
+        # Set environment variables
+        echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
+        echo "PATH=$PATH:$HOME/android-sdk/cmdline-tools/latest/bin:$HOME/android-sdk/build-tools/latest" >> $GITHUB_ENV
+        echo "JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64" >> $GITHUB_ENV
+        
+    - name: Install and configure Android SDK
+      run: |
+        # Create Android SDK directory
+        mkdir -p $HOME/android-sdk
+        cd $HOME/android-sdk
+        
+        # Download and extract command line tools
         wget https://dl.google.com/android/repository/commandlinetools-linux-6514223_latest.zip
         unzip commandlinetools-linux-6514223_latest.zip
-        # Check the actual directory structure after extraction
-        echo "Directory structure after unzip:"
-        ls -la
-        # Create cmdline-tools/latest directory structure
+        
+        # Organize directory structure
         mkdir -p cmdline-tools/latest
-        # Handle different possible directory structures
-        if [ -d "cmdline-tools" ] && [ -d "cmdline-tools/bin" ]; then
-          # Standard structure with bin directory inside cmdline-tools
-          mv cmdline-tools/* cmdline-tools/latest/
-        elif [ -d "tools" ] && [ -d "tools/bin" ]; then
-          # Direct tools directory
-          mv tools cmdline-tools/latest/
-        else
-          # Other structure - move everything to latest
-          mv * cmdline-tools/latest/ 2>/dev/null || true
-        fi
-        # Ensure we have the right structure
-        echo "cmdline-tools directory structure:"
-        ls -la cmdline-tools/
-        echo "cmdline-tools/latest directory structure:"
+        mv cmd*/* cmdline-tools/latest/ 2>/dev/null || true
+        rm -rf cmd*
+        
+        # Verify structure
         ls -la cmdline-tools/latest/
-    
+        
     - name: Accept Android SDK licenses
       run: |
-        export ANDROID_HOME=$HOME/android-sdk
-        export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
-        # Ensure sdkmanager exists
-        echo "Checking sdkmanager location:"
-        ls -la $ANDROID_HOME/cmdline-tools/latest/bin/ || echo "sdkmanager directory not found"
-        # Accept licenses using full path to sdkmanager
+        cd $HOME/android-sdk
+        
+        # Create repositories.cfg file
         mkdir -p $HOME/.android
         echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > $HOME/.android/repositories.cfg
-        echo "84831b9409646a918e30573bab4c9c91346d8abd" >> $HOME/.android/repositories.cfg
-        if [ -f "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=${ANDROID_HOME} --licenses || true
-        else
-          echo "sdkmanager not found, skipping license acceptance"
-        fi
-    
-    - name: Set up Java environment
+        
+        # Accept licenses automatically
+        yes | cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/android-sdk --licenses || true
+        
+    - name: Install required Android SDK packages
       run: |
-        echo "JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64" >> $GITHUB_ENV
-        echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
-        echo "PATH=$PATH:$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_ENV
-    
+        cd $HOME/android-sdk
+        
+        # Install platform-tools and build-tools
+        cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/android-sdk "platform-tools" "build-tools;30.0.3" "platforms;android-30" || true
+        
+        # Verify installation
+        ls -la $HOME/android-sdk/
+        if [ -d "build-tools" ]; then
+          ls -la $HOME/android-sdk/build-tools/
+        fi
+        
+    - name: Initialize buildozer
+      run: |
+        buildozer init
+      continue-on-error: true
+      
+    - name: Update buildozer.spec
+      run: |
+        # Update buildozer.spec to use our Android SDK
+        echo "android.accept_sdk_license = True" >> buildozer.spec
+        echo "android.sdk_path = $HOME/android-sdk" >> buildozer.spec
+        
     - name: Build APK with Buildozer
       run: |
         buildozer android debug
