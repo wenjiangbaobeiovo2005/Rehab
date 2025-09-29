@@ -39,19 +39,25 @@ jobs:
         wget https://dl.google.com/android/repository/commandlinetools-linux-6514223_latest.zip
         unzip commandlinetools-linux-6514223_latest.zip
         # Check the actual directory structure after extraction
+        echo "Directory structure after unzip:"
         ls -la
         # Create cmdline-tools/latest directory structure
         mkdir -p cmdline-tools/latest
-        # Move the contents to the correct location
-        if [ -d "cmdline-tools" ]; then
-          # If there's a cmdline-tools directory with contents
+        # Handle different possible directory structures
+        if [ -d "cmdline-tools" ] && [ -d "cmdline-tools/bin" ]; then
+          # Standard structure with bin directory inside cmdline-tools
           mv cmdline-tools/* cmdline-tools/latest/
+        elif [ -d "tools" ] && [ -d "tools/bin" ]; then
+          # Direct tools directory
+          mv tools cmdline-tools/latest/
         else
-          # If tools were extracted directly
+          # Other structure - move everything to latest
           mv * cmdline-tools/latest/ 2>/dev/null || true
         fi
         # Ensure we have the right structure
+        echo "cmdline-tools directory structure:"
         ls -la cmdline-tools/
+        echo "cmdline-tools/latest directory structure:"
         ls -la cmdline-tools/latest/
     
     - name: Accept Android SDK licenses
@@ -59,11 +65,16 @@ jobs:
         export ANDROID_HOME=$HOME/android-sdk
         export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
         # Ensure sdkmanager exists
-        ls -la $ANDROID_HOME/cmdline-tools/latest/bin/
+        echo "Checking sdkmanager location:"
+        ls -la $ANDROID_HOME/cmdline-tools/latest/bin/ || echo "sdkmanager directory not found"
+        # Accept licenses using full path to sdkmanager
         mkdir -p $HOME/.android
         echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > $HOME/.android/repositories.cfg
-        # Accept licenses using full path to sdkmanager
-        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=${ANDROID_HOME} --licenses || true
+        if [ -f "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=${ANDROID_HOME} --licenses || true
+        else
+          echo "sdkmanager not found, skipping license acceptance"
+        fi
         
     - name: Initialize buildozer
       run: |
