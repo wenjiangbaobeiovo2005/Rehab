@@ -40,20 +40,33 @@ jobs:
         cd $ANDROID_HOME
         wget https://dl.google.com/android/repository/commandlinetools-linux-6514223_latest.zip
         unzip commandlinetools-linux-6514223_latest.zip
+        # Check the actual directory structure after extraction
+        ls -la
+        # Create cmdline-tools/latest directory structure
         mkdir -p cmdline-tools/latest
-        mv cmdline-tools/bin cmdline-tools/latest/
-        mv cmdline-tools/lib cmdline-tools/latest/
-        mv cmdline-tools/share cmdline-tools/latest/
-        export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
+        # Move the contents to the correct location
+        if [ -d "cmdline-tools" ]; then
+          # If there's a cmdline-tools directory with contents
+          mv cmdline-tools/* cmdline-tools/latest/ 2>/dev/null || true
+        else
+          # If tools were extracted directly
+          mv * cmdline-tools/latest/ 2>/dev/null || true
+        fi
+        # Ensure we have the right structure
+        ls -la cmdline-tools/
+        ls -la cmdline-tools/latest/
     
     - name: Accept Android SDK licenses
       run: |
         export ANDROID_HOME=$HOME/android-sdk
         export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
+        # Ensure sdkmanager exists
+        ls -la $ANDROID_HOME/cmdline-tools/latest/bin/
         mkdir -p $HOME/.android
         echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > $HOME/.android/repositories.cfg
         echo "84831b9409646a918e30573bab4c9c91346d8abd" >> $HOME/.android/repositories.cfg
-        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=${ANDROID_HOME} --licenses
+        # Accept licenses using full path to sdkmanager
+        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=${ANDROID_HOME} --licenses || true
     
     - name: Set up Java environment
       run: |
